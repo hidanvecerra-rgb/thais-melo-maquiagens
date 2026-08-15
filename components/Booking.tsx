@@ -1,33 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  SERVICES,
-  SERVICE_PRICES,
   TIME_SLOTS,
   WHATSAPP_NUMBER,
   PIX_KEY_DISPLAY,
   PIX_KEY_RAW,
   formatBRL,
   formatDateBR,
+  formatDateLong,
   toISODate,
   type ServiceName,
 } from "@/lib/constants";
+import { SERVICES, SERVICE_PRICES } from "@/lib/siteConfig";
+import { useBookingContext } from "@/components/BookingProvider";
 
-const STEP_LABELS = [
-  { step: 1, label: "Serviço" },
-  { step: 2, label: "Data e hora" },
-  { step: 3, label: "Seus dados" },
-  { step: 4, label: "Revisão" },
-  { step: 5, label: "Sinal" },
-];
+const TOTAL_STEPS = 5;
+const STEP_TITLES: Record<number, string> = {
+  1: "Serviço",
+  2: "Data e horário",
+  3: "Seus dados",
+  4: "Revisão",
+  5: "Sinal",
+};
 
 type Errors = Partial<
   Record<"service" | "date" | "time" | "name" | "phone" | "style", string>
 >;
 
-export default function BookingExperience() {
+export default function Booking() {
+  const { selectedService } = useBookingContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [service, setService] = useState<ServiceName | "">("");
   const [date, setDate] = useState("");
@@ -42,10 +45,18 @@ export default function BookingExperience() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pixCopied, setPixCopied] = useState(false);
   const [waLink, setWaLink] = useState("");
-  const bookingSectionRef = useRef<HTMLElement>(null);
 
   const today = useMemo(() => toISODate(new Date()), []);
   const depositAmount = service ? SERVICE_PRICES[service] / 2 : 0;
+
+  // Sincroniza com o serviço escolhido na vitrine (Services), sem
+  // sobrescrever se a cliente já estiver alterando a etapa 1 manualmente.
+  useEffect(() => {
+    if (selectedService && currentStep === 1) {
+      setService(selectedService);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedService]);
 
   useEffect(() => {
     if (!date) {
@@ -71,13 +82,6 @@ export default function BookingExperience() {
       cancelled = true;
     };
   }, [date]);
-
-  function quickSelectService(value: ServiceName) {
-    setService(value);
-    setErrors((e) => ({ ...e, service: undefined }));
-    setCurrentStep(1);
-    bookingSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-  }
 
   function goToStep(n: number) {
     setCurrentStep(n);
@@ -164,20 +168,21 @@ export default function BookingExperience() {
       } else {
         console.error("Erro ao salvar agendamento", error);
         setSubmitError(
-          "Não foi possível confirmar seu agendamento agora. Tente novamente em instantes."
+          "Não conseguimos concluir seu agendamento agora. Tente novamente ou fale conosco pelo WhatsApp."
         );
       }
       return;
     }
 
     const message =
-      `Olá Thais! Gostaria de confirmar meu agendamento:\n\n` +
-      `*Serviço:* ${service}\n` +
-      `*Data:* ${formatDateBR(date)}\n` +
-      `*Horário:* ${time}\n` +
-      `*Nome:* ${name.trim()}\n` +
-      `*Estilo desejado:* ${style.trim()}\n\n` +
-      `*Sinal de 50% (${formatBRL(depositAmount)}) pago via Pix — segue o comprovante em anexo.*`;
+      `Olá, Thais! Tudo bem?\n` +
+      `Acabei de fazer um agendamento pelo site.\n\n` +
+      `Nome: ${name.trim()}\n` +
+      `Serviço: ${service}\n` +
+      `Data: ${formatDateBR(date)}\n` +
+      `Horário: ${time}\n\n` +
+      `Sinal de 50% (${formatBRL(depositAmount)}) pago via Pix — segue o comprovante em anexo.\n` +
+      `Gostaria de confirmar meu horário!`;
     setWaLink(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`);
     goToStep(6);
   }
@@ -195,62 +200,35 @@ export default function BookingExperience() {
     goToStep(1);
   }
 
-  return (
-    <>
-      <section className="services" id="servicos">
-        <div className="section-head">
-          <span className="eyebrow">O que eu faço</span>
-          <h2>Serviços</h2>
-          <p>
-            Escolha entre uma produção para o seu evento ou uma aula pensada
-            para o seu dia a dia.
-          </p>
-        </div>
-        <div className="service-grid">
-          {SERVICES.map((s) => (
-            <div className="service-card" key={s.value}>
-              <span className="tag">{s.tag}</span>
-              <h3>{s.label}</h3>
-              <p>{s.description}</p>
-              <div className="price">
-                {s.priceLabel} <span>{s.priceUnit}</span>
-              </div>
-              <button
-                className="service-pick"
-                onClick={() => quickSelectService(s.value)}
-              >
-                Selecionar
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+  const progressPct = Math.min(currentStep, TOTAL_STEPS) / TOTAL_STEPS * 100;
 
-      <section className="booking" id="agendar" ref={bookingSectionRef}>
+  return (
+    <section className="booking" id="agendar">
+      <div className="container">
         <div className="section-head">
           <span className="eyebrow">Reserve seu horário</span>
-          <h2>Agendar horário</h2>
-          <p>
-            Preencha os dados abaixo — é rápido e você recebe a confirmação na
-            hora.
-          </p>
+          <h2>Escolha seu horário</h2>
+          <p>É rápido — você recebe a confirmação em instantes.</p>
         </div>
 
         <div className="booking-card">
-          {currentStep <= 5 && (
-            <div className="steps">
-              {STEP_LABELS.map((s) => (
+          {currentStep <= TOTAL_STEPS && (
+            <div className="booking-progress">
+              <div className="booking-progress-label">
+                Etapa {currentStep} de {TOTAL_STEPS} · {STEP_TITLES[currentStep]}
+              </div>
+              <div
+                className="booking-progress-bar"
+                role="progressbar"
+                aria-valuenow={currentStep}
+                aria-valuemin={1}
+                aria-valuemax={TOTAL_STEPS}
+              >
                 <div
-                  key={s.step}
-                  className={
-                    "step" +
-                    (s.step === currentStep ? " active" : "") +
-                    (s.step < currentStep ? " done" : "")
-                  }
-                >
-                  {s.label}
-                </div>
-              ))}
+                  className="booking-progress-fill"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
             </div>
           )}
 
@@ -265,18 +243,21 @@ export default function BookingExperience() {
                     className={
                       "service-opt" + (service === s.value ? " selected" : "")
                     }
+                    aria-pressed={service === s.value}
                     onClick={() => {
                       setService(s.value);
                       setErrors((e) => ({ ...e, service: undefined }));
                     }}
                   >
                     <div className="name">{s.label}</div>
-                    <div className="meta">{s.meta}</div>
+                    <div className="meta">{formatBRL(s.priceFrom)} · {s.durationLabel}</div>
                   </button>
                 ))}
               </div>
               {errors.service && (
-                <div className="field-error show">{errors.service}</div>
+                <div className="field-error show" role="alert">
+                  {errors.service}
+                </div>
               )}
               <div className="step-nav" style={{ justifyContent: "flex-end" }}>
                 <button className="btn-next" onClick={handleNextFromStep1}>
@@ -301,7 +282,9 @@ export default function BookingExperience() {
                 }}
               />
               {errors.date && (
-                <div className="field-error show">{errors.date}</div>
+                <div className="field-error show" role="alert">
+                  {errors.date}
+                </div>
               )}
 
               <label>Escolha o horário</label>
@@ -316,6 +299,14 @@ export default function BookingExperience() {
                       (takenTimes.includes(slot) ? " taken" : "")
                     }
                     disabled={takenTimes.includes(slot)}
+                    aria-pressed={time === slot}
+                    aria-label={
+                      takenTimes.includes(slot)
+                        ? `${slot} — indisponível`
+                        : time === slot
+                          ? `${slot} — selecionado`
+                          : `${slot} — disponível`
+                    }
                     onClick={() => selectTime(slot)}
                   >
                     {slot}
@@ -323,12 +314,12 @@ export default function BookingExperience() {
                 ))}
               </div>
               {loadingTaken && (
-                <p style={{ fontSize: "12.5px", color: "var(--ink-soft)", marginTop: "6px" }}>
-                  Verificando horários disponíveis…
-                </p>
+                <p className="field-hint">Verificando horários disponíveis…</p>
               )}
               {errors.time && (
-                <div className="field-error show">{errors.time}</div>
+                <div className="field-error show" role="alert">
+                  {errors.time}
+                </div>
               )}
 
               <div className="step-nav">
@@ -349,6 +340,7 @@ export default function BookingExperience() {
                 type="text"
                 id="name"
                 placeholder="Nome completo"
+                autoComplete="name"
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
@@ -356,7 +348,9 @@ export default function BookingExperience() {
                 }}
               />
               {errors.name && (
-                <div className="field-error show">{errors.name}</div>
+                <div className="field-error show" role="alert">
+                  {errors.name}
+                </div>
               )}
 
               <label htmlFor="phone">Seu WhatsApp</label>
@@ -364,6 +358,7 @@ export default function BookingExperience() {
                 type="tel"
                 id="phone"
                 placeholder="(34) 99999-9999"
+                autoComplete="tel"
                 value={phone}
                 onChange={(e) => {
                   setPhone(e.target.value);
@@ -371,7 +366,9 @@ export default function BookingExperience() {
                 }}
               />
               {errors.phone && (
-                <div className="field-error show">{errors.phone}</div>
+                <div className="field-error show" role="alert">
+                  {errors.phone}
+                </div>
               )}
 
               <label htmlFor="style">
@@ -387,8 +384,15 @@ export default function BookingExperience() {
                 }}
               />
               {errors.style && (
-                <div className="field-error show">{errors.style}</div>
+                <div className="field-error show" role="alert">
+                  {errors.style}
+                </div>
               )}
+
+              <p className="consent-note">
+                Ao continuar, você concorda com o uso dos dados informados
+                para gerenciamento e confirmação do seu agendamento.
+              </p>
 
               <div className="step-nav">
                 <button className="btn-back" onClick={() => goToStep(2)}>
@@ -410,7 +414,7 @@ export default function BookingExperience() {
                 </div>
                 <div className="summary-row">
                   <span className="label">Data</span>
-                  <span className="val">{formatDateBR(date)}</span>
+                  <span className="val">{formatDateLong(date)}</span>
                 </div>
                 <div className="summary-row">
                   <span className="label">Horário</span>
@@ -425,8 +429,10 @@ export default function BookingExperience() {
                   <span className="val">{phone}</span>
                 </div>
                 <div className="summary-row">
-                  <span className="label">Estilo desejado</span>
-                  <span className="val">{style}</span>
+                  <span className="label">Valor</span>
+                  <span className="val">
+                    {formatBRL(service ? SERVICE_PRICES[service] : 0)}
+                  </span>
                 </div>
               </div>
               <div className="step-nav">
@@ -466,18 +472,15 @@ export default function BookingExperience() {
                 </div>
               </div>
 
-              <label>Chave Pix (celular)</label>
-              <div className="pix-box">
+              <label htmlFor="pix-key">Chave Pix (celular)</label>
+              <div className="pix-box" id="pix-key">
                 <span>{PIX_KEY_DISPLAY}</span>
                 <button type="button" className="pix-copy" onClick={copyPix}>
                   Copiar
                 </button>
               </div>
               {pixCopied && (
-                <div
-                  className="field-error show"
-                  style={{ color: "var(--butter-700)" }}
-                >
+                <div className="field-error show" style={{ color: "var(--accent)" }}>
                   Chave copiada!
                 </div>
               )}
@@ -489,7 +492,9 @@ export default function BookingExperience() {
               </p>
 
               {submitError && (
-                <div className="field-error show">{submitError}</div>
+                <div className="state-banner error" role="alert">
+                  {submitError}
+                </div>
               )}
 
               <div className="step-nav">
@@ -510,26 +515,57 @@ export default function BookingExperience() {
           {currentStep === 6 && (
             <div className="form-step">
               <div className="confirm-box">
-                <div className="confirm-icon">✓</div>
-                <h3 style={{ fontSize: "20px" }}>Horário reservado!</h3>
+                <div className="confirm-icon">🤍</div>
+                <h3 style={{ fontSize: "22px" }}>Seu horário foi solicitado</h3>
                 <p
                   style={{
-                    color: "var(--ink-soft)",
+                    color: "var(--muted)",
                     marginTop: "8px",
                     fontSize: "14.5px",
                   }}
                 >
-                  Toque no botão abaixo para confirmar seu agendamento pelo
-                  WhatsApp e enviar o comprovante do sinal. A Thais vai
-                  receber todos os detalhes automaticamente.
+                  Agora falta apenas confirmar os detalhes com a Thais pelo
+                  WhatsApp, junto com o comprovante do Pix.
                 </p>
+
+                <div className="confirm-summary">
+                  <div className="summary-row">
+                    <span className="label">Serviço</span>
+                    <span className="val">{service}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="label">Data</span>
+                    <span className="val">{formatDateLong(date)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="label">Horário</span>
+                    <span className="val">{time}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="label">Nome</span>
+                    <span className="val">{name}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="label">Telefone</span>
+                    <span className="val">{phone}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="label">Sinal (50%)</span>
+                    <span className="val">{formatBRL(depositAmount)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="label">Status</span>
+                    <span className="val">Pendente de confirmação</span>
+                  </div>
+                </div>
+
                 <a
                   href={waLink}
                   target="_blank"
                   rel="noreferrer"
                   className="whatsapp-btn"
                 >
-                  Confirmar no WhatsApp
+                  Confirmar pelo WhatsApp
                 </a>
                 <div style={{ marginTop: "18px" }}>
                   <button className="btn-back" onClick={resetForm}>
@@ -540,7 +576,7 @@ export default function BookingExperience() {
             </div>
           )}
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

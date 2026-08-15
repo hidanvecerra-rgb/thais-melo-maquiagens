@@ -1,41 +1,45 @@
-import { PIX_KEY_DISPLAY } from "@/lib/constants";
+import PlaceholderImage from "@/components/PlaceholderImage";
+import Reveal from "@/components/Reveal";
+import { BRAND, IMAGE_PLACEHOLDERS } from "@/lib/siteConfig";
 
 export default function LocationSection() {
   return (
-    <section className="location" id="localizacao">
-      <div className="loc-wrap">
-        <div className="loc-info">
-          <h3>Onde estou</h3>
+    <section id="localizacao" style={{ background: "var(--surface)" }}>
+      <div className="container loc-wrap">
+        <Reveal as="div" className="loc-info">
+          <span className="eyebrow">Localização</span>
+          <h3>Onde você será atendida</h3>
           <div className="loc-line">
-            <span>📍</span>
-            <p>
-              Atendimento em estúdio próprio, em Ituiutaba - MG. O endereço
-              completo é enviado na confirmação do WhatsApp.
-            </p>
+            <span>
+              <strong>{BRAND.cityState}.</strong> Atendimento em estúdio
+              próprio e exclusivamente com horário marcado.
+            </span>
           </div>
           <div className="loc-line">
-            <span>📱</span>
-            <p>{PIX_KEY_DISPLAY}</p>
+            <span>{BRAND.phoneDisplay}</span>
           </div>
           <div className="loc-line">
-            <span>🕐</span>
-            <p>Terça a sábado, das 9h às 19h</p>
+            <span>{BRAND.hoursLabel}</span>
           </div>
+          <p className="loc-note">
+            O endereço completo é informado após a confirmação do
+            agendamento.
+          </p>
           <a
             href="#agendar"
-            className="btn-primary"
-            style={{ display: "inline-block", marginTop: "10px" }}
+            className="btn btn-primary"
+            style={{ marginTop: "20px" }}
           >
             Agendar horário
           </a>
-        </div>
-        <div className="loc-map">
-          <div className="loc-map-pin">📍</div>
-          <div className="loc-map-label">Ituiutaba, MG</div>
-          <div className="loc-map-sub">
-            Endereço completo enviado na confirmação
-          </div>
-        </div>
+        </Reveal>
+        <Reveal as="div" className="loc-map">
+          <PlaceholderImage
+            path={IMAGE_PLACEHOLDERS.studio}
+            label={`Foto: ${IMAGE_PLACEHOLDERS.studio} — substituir`}
+            variant="wide"
+          />
+        </Reveal>
       </div>
     </section>
   );

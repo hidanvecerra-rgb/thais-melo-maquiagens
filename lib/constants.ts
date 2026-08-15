@@ -1,40 +1,11 @@
-export type ServiceName = "Maquiagem social" | "Aula de automaquiagem";
+// Helpers técnicos (datas, formatação, links). Dados comerciais e de
+// conteúdo (nome, telefone, serviços, preços, FAQ...) vivem em
+// lib/siteConfig.ts — não duplicar aqui.
+import { BRAND, SERVICES, SERVICE_PRICES, type ServiceConfig } from "./siteConfig";
 
-export const SERVICES: {
-  value: ServiceName;
-  label: string;
-  meta: string;
-  tag: string;
-  description: string;
-  priceLabel: string;
-  priceUnit: string;
-}[] = [
-  {
-    value: "Maquiagem social",
-    label: "Maquiagem social",
-    meta: "Festas, formaturas e eventos",
-    tag: "Social",
-    description:
-      "Produção completa para festas, formaturas, ensaios e eventos especiais, com pele impecável e acabamento duradouro.",
-    priceLabel: "A partir de R$ 120",
-    priceUnit: "/ atendimento",
-  },
-  {
-    value: "Aula de automaquiagem",
-    label: "Aula de automaquiagem",
-    meta: "Aula individual, 2h",
-    tag: "Aula individual",
-    description:
-      "Aula individual e prática para você aprender a se maquiar sozinha, com técnicas para o seu tipo de pele e rosto.",
-    priceLabel: "A partir de R$ 150",
-    priceUnit: "/ aula (2h)",
-  },
-];
+export type ServiceName = ServiceConfig["value"];
 
-export const SERVICE_PRICES: Record<ServiceName, number> = {
-  "Maquiagem social": 120,
-  "Aula de automaquiagem": 150,
-};
+export { SERVICES, SERVICE_PRICES };
 
 export const TIME_SLOTS = [
   "09:00",
@@ -49,9 +20,9 @@ export const TIME_SLOTS = [
 
 export const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export const WHATSAPP_NUMBER = "5534996731368";
-export const PIX_KEY_DISPLAY = "(34) 99673-1368";
-export const PIX_KEY_RAW = "34996731368";
+export const WHATSAPP_NUMBER = BRAND.whatsappNumber;
+export const PIX_KEY_DISPLAY = BRAND.pixKeyDisplay;
+export const PIX_KEY_RAW = BRAND.pixKeyRaw;
 
 export function formatBRL(n: number): string {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -61,6 +32,28 @@ export function formatDateBR(iso: string): string {
   if (!iso) return "";
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
+}
+
+const MONTHS_PT = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+
+// "22 de agosto" — usado no resumo do agendamento.
+export function formatDateLong(iso: string): string {
+  if (!iso) return "";
+  const [, m, d] = iso.split("-").map(Number);
+  return `${d} de ${MONTHS_PT[m - 1]}`;
 }
 
 export function toISODate(d: Date): string {
