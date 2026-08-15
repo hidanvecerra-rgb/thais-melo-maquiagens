@@ -29,7 +29,13 @@ export default function LocationSection() {
             Agendar horário
           </a>
         </div>
-        <div className="loc-map">Mapa do estúdio</div>
+        <div className="loc-map">
+          <div className="loc-map-pin">📍</div>
+          <div className="loc-map-label">Ituiutaba, MG</div>
+          <div className="loc-map-sub">
+            Endereço completo enviado na confirmação
+          </div>
+        </div>
       </div>
     </section>
   );

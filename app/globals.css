@@ -136,6 +136,41 @@ button {
   transform: translateY(-1px);
 }
 
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.nav-burger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  margin: 0 auto;
+  background: var(--burgundy-900);
+  border-radius: 2px;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
+}
+.nav-burger[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.nav-burger[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+.nav-burger[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+.nav-mobile {
+  display: none;
+}
+
 /* ---------- hero ---------- */
 .hero {
   position: relative;
@@ -709,15 +744,36 @@ textarea {
   margin-bottom: 14px;
 }
 .loc-map {
-  background: var(--butter-100);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 22px 22px, var(--line) 1.5px, transparent 1.5px)
+      0 0 / 26px 26px,
+    linear-gradient(135deg, var(--butter-100), var(--butter-300));
   border-radius: 18px;
-  height: 220px;
+  height: 240px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   color: var(--butter-700);
   font-size: 14px;
   border: 1px solid var(--line);
+}
+.loc-map-pin {
+  font-size: 34px;
+  filter: drop-shadow(0 6px 10px rgba(122, 47, 69, 0.25));
+}
+.loc-map-label {
+  font-family: var(--font-playfair), serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--burgundy-900);
+}
+.loc-map-sub {
+  font-size: 12.5px;
+  color: var(--ink-soft);
 }
 
 /* ---------- footer ---------- */
@@ -749,23 +805,51 @@ footer .copyright {
   color: rgba(252, 239, 218, 0.5);
   margin-top: 20px;
 }
-.admin-link {
+.whatsapp-float {
   position: fixed;
-  bottom: 18px;
-  right: 18px;
+  bottom: 20px;
+  right: 20px;
   z-index: 50;
-  background: var(--burgundy-900);
-  color: var(--butter-100);
-  width: 46px;
-  height: 46px;
+  background: #25d366;
+  color: #fff;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 24px rgba(37, 211, 102, 0.45);
+  transition:
+    transform 0.15s,
+    box-shadow 0.2s;
+}
+.whatsapp-float:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 14px 28px rgba(37, 211, 102, 0.5);
+}
+
+.admin-link {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 50;
+  background: var(--burgundy-900);
+  color: var(--butter-100);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  opacity: 0.55;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   border: none;
   text-decoration: none;
+  transition: opacity 0.2s;
+}
+.admin-link:hover {
+  opacity: 1;
 }
 
 /* ---------- admin page ---------- */
@@ -1075,6 +1159,47 @@ footer .copyright {
   }
   .nav-links {
     display: none;
+  }
+  .nav-burger {
+    display: flex;
+  }
+  .nav-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 10px 6vw 18px;
+    background: var(--butter-100);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 12px 20px rgba(62, 20, 32, 0.08);
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      max-height 0.25s ease,
+      opacity 0.2s ease;
+  }
+  .nav-mobile.open {
+    max-height: 240px;
+    opacity: 1;
+  }
+  .nav-mobile a {
+    padding: 12px 4px;
+    font-size: 15px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-mobile a:last-child {
+    border-bottom: none;
+    margin-top: 6px;
+  }
+  .nav-mobile a.nav-cta {
+    text-align: center;
+    border-bottom: none;
   }
   .steps {
     font-size: 11px;
