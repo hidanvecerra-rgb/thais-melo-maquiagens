@@ -4,11 +4,20 @@ import { Fragment, useEffect, useState } from "react";
 import {
   TIME_SLOTS,
   WEEKDAY_LABELS,
+  buildWhatsAppLink,
+  combineDateTime,
   formatBRL,
   formatDateBR,
   getWeekDates,
   toISODate,
 } from "@/lib/constants";
+
+const REMINDER_WINDOW_MS = 4 * 60 * 60 * 1000;
+
+function reminderMessage(name: string, service: string, time: string) {
+  const firstName = name.trim().split(" ")[0];
+  return `Olá ${firstName}! Passando para lembrar do seu horário de ${service} hoje às ${time} com a Thais Melo Maquiagens 💕 Qualquer imprevisto, me avisa!`;
+}
 import type { Agendamento } from "@/lib/types";
 
 type Tab = "week" | "list";
@@ -25,6 +34,12 @@ export default function AdminPanel() {
   const [tab, setTab] = useState<Tab>("week");
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   async function loadAgendamentos() {
     setLoadingData(true);
@@ -144,6 +159,15 @@ export default function AdminPanel() {
     ? active.filter((a) => a.date === selectedDay)
     : [];
 
+  const upcoming = active
+    .map((a) => ({ a, dt: combineDateTime(a.date, a.time) }))
+    .filter(
+      ({ dt }) =>
+        dt.getTime() > now.getTime() &&
+        dt.getTime() - now.getTime() <= REMINDER_WINDOW_MS
+    )
+    .sort((x, y) => x.dt.getTime() - y.dt.getTime());
+
   return (
     <div className="admin-page">
       <div className="admin-panel">
@@ -169,6 +193,36 @@ export default function AdminPanel() {
         >
           Horários vagos e preenchidos, com o estilo pedido por cliente.
         </p>
+
+        {upcoming.length > 0 && (
+          <div className="reminder-banner">
+            <div className="reminder-title">
+              🔔 Atendimento{upcoming.length > 1 ? "s" : ""} nas próximas 4
+              horas — lembre a cliente
+            </div>
+            {upcoming.map(({ a }) => (
+              <div className="reminder-item" key={a.id}>
+                <div className="reminder-info">
+                  <span className="reminder-name">{a.client_name}</span>
+                  <span className="reminder-when">
+                    hoje às {a.time} · {a.service}
+                  </span>
+                </div>
+                <a
+                  className="reminder-btn"
+                  href={buildWhatsAppLink(
+                    a.client_phone,
+                    reminderMessage(a.client_name, a.service, a.time)
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Lembrar no WhatsApp
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="admin-tabs">
           <button

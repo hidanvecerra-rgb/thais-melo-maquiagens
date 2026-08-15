@@ -70,6 +70,25 @@ export function toISODate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// Combina date (YYYY-MM-DD) + time (HH:MM) em um Date local.
+export function combineDateTime(date: string, time: string): Date {
+  const [y, m, d] = date.split("-").map(Number);
+  const [h, min] = time.split(":").map(Number);
+  return new Date(y, m - 1, d, h, min);
+}
+
+// Normaliza um telefone brasileiro digitado livremente (com DDD) para o
+// formato exigido pelo wa.me (com código do país 55).
+export function normalizeBrazilPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("55") && digits.length >= 12) return digits;
+  return `55${digits}`;
+}
+
+export function buildWhatsAppLink(phone: string, message: string): string {
+  return `https://wa.me/${normalizeBrazilPhone(phone)}?text=${encodeURIComponent(message)}`;
+}
+
 // Retorna os 6 dias (segunda a sábado) da semana deslocada por "offset"
 // semanas em relação à semana atual.
 export function getWeekDates(offset: number): Date[] {
